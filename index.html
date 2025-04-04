@@ -98,6 +98,21 @@
   <button onclick="location.reload()" style="display:none;" id="retryButton">🔄 נסה שוב</button>
 
   <script>
+    // ✅ בדיקת דפדפן ותמיכה
+    function checkBrowserSupport() {
+      const userAgent = navigator.userAgent;
+
+      if (/iPhone|iPad|iPod/i.test(userAgent)) {
+        alert("⚠️ במכשירי iPhone, תרגול ההגייה לא נתמך בדפדפן. מומלץ להשתמש במחשב או במכשיר Android עם דפדפן Chrome.");
+      } else if (/Safari/i.test(userAgent) && !/Chrome/i.test(userAgent)) {
+        alert("⚠️ בדפדפן Safari התרגול אינו נתמך. מומלץ להשתמש ב-Chrome או ב-Edge.");
+      } else if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
+        alert("⚠️ הדפדפן שלך אינו תומך בזיהוי דיבור. אנא השתמש ב-Google Chrome או ב-Edge.");
+      }
+    }
+
+    window.onload = checkBrowserSupport;
+
     const target = decodeURIComponent(new URLSearchParams(window.location.search).get("sentence")) || "I like pizza";
     document.getElementById("target").textContent = target;
 
