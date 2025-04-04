@@ -89,13 +89,12 @@
           let interimTranscript = "";
           for (let i = event.resultIndex; i < event.results.length; ++i) {
             const transcript = event.results[i][0].transcript;
+            interimTranscript += transcript + " ";
             if (event.results[i].isFinal) {
               finalTranscript += transcript + " ";
-            } else {
-              interimTranscript += transcript;
             }
           }
-          document.getElementById("spoken").innerHTML = `<p><strong>You said:</strong> ${interimTranscript}</p>`;
+          document.getElementById("spoken").innerHTML = `<p><strong>You said:</strong> ${interimTranscript.trim()}</p>`;
         };
 
         recognition.onerror = (event) => {
@@ -126,8 +125,14 @@
     }
 
     function processResult(spokenText) {
-      const expectedWords = target.toLowerCase().split(" ");
-      const spokenWords = spokenText.split(" ");
+      const clean = (text) => text
+        .toLowerCase()
+        .replace(/[.,?!]/g, '') // נקה תווים מיוחדים
+        .replace(/\s+/g, ' ')  // נקה רווחים כפולים
+        .trim();
+
+      const expectedWords = clean(target).split(" ");
+      const spokenWords = clean(spokenText).split(" ");
 
       let correct = 0;
       let result = "";
