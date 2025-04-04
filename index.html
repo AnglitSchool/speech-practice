@@ -19,7 +19,21 @@
     .instructions {
       font-size: 1.1em;
       color: #333;
+      margin-bottom: 10px;
+    }
+    .browser-info {
       margin-bottom: 20px;
+      font-size: 1em;
+      padding: 10px;
+      border-radius: 8px;
+    }
+    .supported {
+      background-color: #d4f9d4;
+      color: #006400;
+    }
+    .unsupported {
+      background-color: #ffdede;
+      color: #8b0000;
     }
     .target-sentence {
       font-size: 1.6em;
@@ -85,6 +99,7 @@
 </head>
 <body>
   <h1>Pronunciation Practice</h1>
+  <div class="browser-info" id="browserInfo"></div>
   <div class="instructions">
     📢 דבר חזק, ברור ומהר אל תוך המיקרופון כדי שהתוכנה תעבוד בצורה מדויקת!
   </div>
@@ -98,16 +113,23 @@
   <button onclick="location.reload()" style="display:none;" id="retryButton">🔄 נסה שוב</button>
 
   <script>
-    // ✅ בדיקת דפדפן ותמיכה
+    // ✅ בדיקת דפדפן חכמה עם הודעה בדף
     function checkBrowserSupport() {
       const userAgent = navigator.userAgent;
+      const browserInfo = document.getElementById("browserInfo");
 
       if (/iPhone|iPad|iPod/i.test(userAgent)) {
-        alert("⚠️ במכשירי iPhone, תרגול ההגייה לא נתמך בדפדפן. מומלץ להשתמש במחשב או במכשיר Android עם דפדפן Chrome.");
+        browserInfo.className = "browser-info unsupported";
+        browserInfo.textContent = "⚠️ אתה משתמש ב-iPhone או iPad. ייתכן שהתרגול יעבוד, אך התמיכה לא מובטחת בכל הדגמים. מומלץ להשתמש במחשב או במכשיר Android עם Chrome.";
       } else if (/Safari/i.test(userAgent) && !/Chrome/i.test(userAgent)) {
-        alert("⚠️ בדפדפן Safari התרגול אינו נתמך. מומלץ להשתמש ב-Chrome או ב-Edge.");
+        browserInfo.className = "browser-info unsupported";
+        browserInfo.textContent = "⚠️ אתה משתמש בדפדפן Safari. התמיכה בתרגול אינה מלאה. מומלץ להשתמש ב-Google Chrome או Microsoft Edge.";
       } else if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
-        alert("⚠️ הדפדפן שלך אינו תומך בזיהוי דיבור. אנא השתמש ב-Google Chrome או ב-Edge.");
+        browserInfo.className = "browser-info unsupported";
+        browserInfo.textContent = "⚠️ הדפדפן שלך אינו תומך בזיהוי דיבור. מומלץ להשתמש ב-Google Chrome או Microsoft Edge.";
+      } else {
+        browserInfo.className = "browser-info supported";
+        browserInfo.textContent = "✅ הדפדפן שלך תומך בתרגול ההגייה!";
       }
     }
 
