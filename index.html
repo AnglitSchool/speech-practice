@@ -40,21 +40,21 @@
     button:hover {
       background-color: #005fa3;
     }
-    .correct {
-      color: white;
-      background-color: lightgreen;
+    .word-result {
       padding: 4px 8px;
       margin: 2px;
       display: inline-block;
       border-radius: 6px;
+      color: white;
+    }
+    .correct {
+      background-color: lightgreen;
+    }
+    .almost {
+      background-color: orange;
     }
     .incorrect {
-      color: white;
       background-color: lightcoral;
-      padding: 4px 8px;
-      margin: 2px;
-      display: inline-block;
-      border-radius: 6px;
     }
     #scoreDisplay {
       margin-top: 20px;
@@ -105,21 +105,18 @@
     let isRecording = false;
     let finalTranscript = "";
 
-    // פונקציה לחישוב מרחק לֶוֶנְשְטֵיין (Levenshtein Distance)
     function levenshteinDistance(a, b) {
       const matrix = Array.from({ length: b.length + 1 }, (_, i) => [i]);
-      for (let j = 0; j <= a.length; j++) {
-        matrix[0][j] = j;
-      }
+      for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
       for (let i = 1; i <= b.length; i++) {
         for (let j = 1; j <= a.length; j++) {
           if (b[i - 1] === a[j - 1]) {
             matrix[i][j] = matrix[i - 1][j - 1];
           } else {
             matrix[i][j] = Math.min(
-              matrix[i - 1][j - 1] + 1, // החלפה
-              matrix[i][j - 1] + 1,     // הוספה
-              matrix[i - 1][j] + 1      // מחיקה
+              matrix[i - 1][j - 1] + 1,
+              matrix[i][j - 1] + 1,
+              matrix[i - 1][j] + 1
             );
           }
         }
@@ -127,7 +124,6 @@
       return matrix[b.length][a.length];
     }
 
-    // פונקציה לבדוק דמיון מילים באחוזים
     function similarity(a, b) {
       const distance = levenshteinDistance(a, b);
       const maxLen = Math.max(a.length, b.length);
@@ -152,11 +148,7 @@
         };
 
         recognition.onerror = (event) => {
-          if (event.error === "not-allowed") {
-            document.getElementById("error").textContent = "יש לאפשר שימוש במיקרופון כדי להשתמש בתרגול.";
-          } else {
-            document.getElementById("error").textContent = "שגיאה: " + event.error;
-          }
+          document.getElementById("error").textContent = "שגיאה: " + event.error;
         };
 
         recognition.onend = () => {
@@ -208,13 +200,17 @@
       expectedWords.forEach((expectedWord, index) => {
         const spokenWord = spokenWords[index] || "";
         const similarityScore = similarity(expectedWord, spokenWord);
+        const percentage = Math.round(similarityScore * 100);
 
-        if (similarityScore >= 0.7) { // רף של 70% דמיון
-          result += `<span class='correct'>${expectedWord}</span>`;
+        let className = "incorrect";
+        if (percentage >= 85) {
+          className = "correct";
           correct++;
-        } else {
-          result += `<span class='incorrect'>${expectedWord}</span>`;
+        } else if (percentage >= 50) {
+          className = "almost";
         }
+
+        result += `<span class="word-result ${className}">${expectedWord} (${percentage}%)</span>`;
       });
 
       const score = Math.round((correct / expectedWords.length) * 100);
