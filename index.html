@@ -29,6 +29,7 @@
       border-radius: 8px;
       cursor: pointer;
       transition: background 0.3s ease;
+      margin: 5px;
     }
     button:hover {
       background-color: #005fa3;
@@ -54,6 +55,12 @@
       font-size: 1.2em;
       color: #004080;
     }
+    #successMessage {
+      margin-top: 15px;
+      font-size: 1.4em;
+      color: green;
+      font-weight: bold;
+    }
     #error {
       margin-top: 15px;
       color: red;
@@ -68,7 +75,9 @@
   <div id="spoken"></div>
   <div id="result"></div>
   <div id="scoreDisplay"></div>
+  <div id="successMessage"></div>
   <div id="error"></div>
+  <button onclick="location.reload()" style="display:none;" id="retryButton">🔄 נסה שוב</button>
 
   <script>
     const target = decodeURIComponent(new URLSearchParams(window.location.search).get("sentence")) || "I like pizza";
@@ -86,7 +95,7 @@
         recognition.continuous = true;
 
         recognition.onresult = (event) => {
-          finalTranscript = ""; // איפוס כל פעם
+          finalTranscript = "";
           for (let i = event.resultIndex; i < event.results.length; ++i) {
             if (event.results[i].isFinal) {
               finalTranscript += event.results[i][0].transcript.trim() + " ";
@@ -117,6 +126,8 @@
         document.getElementById("result").innerHTML = "";
         document.getElementById("scoreDisplay").innerHTML = "";
         document.getElementById("error").textContent = "";
+        document.getElementById("successMessage").textContent = "";
+        document.getElementById("retryButton").style.display = "none";
 
         recognition.start();
         document.getElementById("recordBtn").textContent = "🛑 Stop Speaking";
@@ -135,15 +146,12 @@
         .replace(/\s+/g, ' ')
         .trim();
 
-      // שלב 1: ניקוי טקסט
       const cleanedText = clean(spokenText);
 
-      // שלב 2: סינון מילים כפולות רצופות
       const words = cleanedText.split(" ");
       const filteredWords = words.filter((word, index, arr) => index === 0 || word !== arr[index - 1]);
       const finalSpokenText = filteredWords.join(" ");
 
-      // שלב 3: השוואה למשפט המקורי
       const expectedWords = clean(target).split(" ");
       const spokenWords = finalSpokenText.split(" ");
 
@@ -164,6 +172,12 @@
       document.getElementById("result").innerHTML = result;
       document.getElementById("scoreDisplay").innerHTML = `✅ Success: ${correct}/${expectedWords.length} (${score}%)`;
       document.getElementById("error").textContent = "";
+
+      if (correct === expectedWords.length) {
+        document.getElementById("successMessage").textContent = "🎉 כל הכבוד! הצלחת את כל המשפט!";
+      }
+
+      document.getElementById("retryButton").style.display = "inline-block";
     }
   </script>
 </body>
