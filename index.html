@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Anglit School | Pronunciation Practice</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f4faff;
+      padding: 40px;
+      text-align: center;
+      color: #1a1a1a;
+    }
+    h1 {
+      font-size: 2.5em;
+      color: #004080;
+      margin-bottom: 10px;
+    }
+    .target-sentence {
+      font-size: 1.6em;
+      margin: 20px 0;
+      font-weight: bold;
+    }
+    button {
+      padding: 12px 24px;
+      font-size: 1em;
+      background-color: #007acc;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    button:hover {
+      background-color: #005fa3;
+    }
+    .correct {
+      color: white;
+      background-color: lightgreen;
+      padding: 4px 8px;
+      margin: 2px;
+      display: inline-block;
+      border-radius: 6px;
+    }
+    .incorrect {
+      color: white;
+      background-color: lightcoral;
+      padding: 4px 8px;
+      margin: 2px;
+      display: inline-block;
+      border-radius: 6px;
+    }
+    #scoreDisplay {
+      margin-top: 20px;
+      font-size: 1.2em;
+      color: #004080;
+    }
+    #error {
+      margin-top: 15px;
+      color: red;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>Pronunciation Practice</h1>
+  <div class="target-sentence" id="target"></div>
+  <button onclick="toggleRecording()" id="recordBtn">🎤 Start Speaking</button>
+  <div id="spoken"></div>
+  <div id="result"></div>
+  <div id="scoreDisplay"></div>
+  <div id="error"></div>
+
+  <script>
+    const target = decodeURIComponent(new URLSearchParams(window.location.search).get("sentence")) || "I like pizza";
+    document.getElementById("target").textContent = target;
+
+    let recognition;
+    let isRecording = false;
+
+    function toggleRecording() {
+      if (!recognition) {
+        recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.lang = "en-US";
+        recognition.continuous = true; // השיפור שביקשת - הקלטה עד שהמשתמש עוצר
+
+        recognition.onresult = (event) => {
+          const spoken = Array.from(event.results)
+            .map(result => result[0].transcript)
+            .join(' ')
+            .toLowerCase()
+            .trim();
+
+          const expectedWords = target.toLowerCase().split(" ");
+          const spokenWords = spoken.split(" ");
+
+          document.getElementById("spoken").innerHTML = `<p><strong>You said:</strong> ${spoken}</p>`;
+
+          let correct = 0;
+          let result = "";
+
+          expectedWords.forEach((word, index) => {
+            if (spokenWords[index] === word) {
+              result += `<span class='correct'>${word}</span>`;
+              correct++;
+            } else {
+              result += `<span class='incorrect'>${word}</span>`;
+            }
+          });
+
+          const score = Math.round((correct / expectedWords.length) * 100);
+          document.getElementById("result").innerHTML = result;
+          document.getElementById("scoreDisplay").innerHTML = `✅ Success: ${correct}/${expectedWords.length} (${score}%)`;
+          document.getElementById("error").textContent = "";
+        };
+
+        recognition.onerror = (event) => {
+          if (event.error === "not-allowed") {
+            document.getElementById("error").textContent = "יש לאפשר שימוש במיקרופון כדי להשתמש בתרגול.";
+          } else {
+            document.getElementById("error").textContent = "שגיאה: " + event.error;
+          }
+        };
+      }
+
+      if (!isRecording) {
+        recognition.start();
+        document.getElementById("recordBtn").textContent = "🛑 Stop Speaking";
+        isRecording = true;
+      } else {
+        recognition.stop();
+        document.getElementById("recordBtn").textContent = "🎤 Start Speaking";
+        isRecording = false;
+      }
+    }
+  </script>
+</body>
+</html>
