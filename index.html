@@ -18,6 +18,7 @@
     .target-sentence {
       font-size: 1.6em;
       margin: 20px 0;
+      font-weight: bold;
     }
     button {
       padding: 12px 24px;
@@ -81,11 +82,20 @@
       if (!recognition) {
         recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
         recognition.lang = "en-US";
-        recognition.interimResults = false; // רק תוצאה סופית
+        recognition.interimResults = true;
+        finalTranscript = "";
 
         recognition.onresult = (event) => {
-          finalTranscript = event.results[0][0].transcript.toLowerCase().trim();
-          document.getElementById("spoken").innerHTML = `<p><strong>You said:</strong> ${finalTranscript}</p>`;
+          let interimTranscript = "";
+          for (let i = event.resultIndex; i < event.results.length; ++i) {
+            const transcript = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+              finalTranscript += transcript + " ";
+            } else {
+              interimTranscript += transcript;
+            }
+          }
+          document.getElementById("spoken").innerHTML = `<p><strong>You said:</strong> ${interimTranscript}</p>`;
         };
 
         recognition.onerror = (event) => {
@@ -95,10 +105,16 @@
             document.getElementById("error").textContent = "שגיאה: " + event.error;
           }
         };
+
+        recognition.onend = () => {
+          if (!isRecording) {
+            processResult(finalTranscript.trim().toLowerCase());
+            finalTranscript = "";
+          }
+        };
       }
 
       if (!isRecording) {
-        finalTranscript = "";
         recognition.start();
         document.getElementById("recordBtn").textContent = "🛑 Stop Speaking";
         isRecording = true;
@@ -106,13 +122,12 @@
         recognition.stop();
         document.getElementById("recordBtn").textContent = "🎤 Start Speaking";
         isRecording = false;
-        checkResult(); // רק כשעוצרים!
       }
     }
 
-    function checkResult() {
+    function processResult(spokenText) {
       const expectedWords = target.toLowerCase().split(" ");
-      const spokenWords = finalTranscript.split(" ");
+      const spokenWords = spokenText.split(" ");
 
       let correct = 0;
       let result = "";
@@ -127,8 +142,10 @@
       });
 
       const score = Math.round((correct / expectedWords.length) * 100);
+      document.getElementById("spoken").innerHTML = `<p><strong>You said:</strong> ${spokenText}</p>`;
       document.getElementById("result").innerHTML = result;
       document.getElementById("scoreDisplay").innerHTML = `✅ Success: ${correct}/${expectedWords.length} (${score}%)`;
+      document.getElementById("error").textContent = "";
     }
   </script>
 </body>
