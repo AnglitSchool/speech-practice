@@ -83,6 +83,7 @@
         recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
         recognition.lang = "en-US";
         recognition.interimResults = true;
+        recognition.continuous = true; // ✅ הכי חשוב!
         finalTranscript = "";
 
         recognition.onresult = (event) => {
@@ -107,8 +108,11 @@
 
         recognition.onend = () => {
           if (!isRecording) {
-            processResult(finalTranscript.trim().toLowerCase());
-            finalTranscript = "";
+            // נוסיף השהייה קטנה כדי לוודא שתפס הכל
+            setTimeout(() => {
+              processResult(finalTranscript.trim().toLowerCase());
+              finalTranscript = "";
+            }, 300);
           }
         };
       }
@@ -127,8 +131,8 @@
     function processResult(spokenText) {
       const clean = (text) => text
         .toLowerCase()
-        .replace(/[.,?!]/g, '') // נקה תווים מיוחדים
-        .replace(/\s+/g, ' ')  // נקה רווחים כפולים
+        .replace(/[.,?!]/g, '') // מנקה תווים מיוחדים
+        .replace(/\s+/g, ' ')  // מנקה רווחים כפולים
         .trim();
 
       const expectedWords = clean(target).split(" ");
