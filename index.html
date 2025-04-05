@@ -22,9 +22,9 @@
     font-size: 1em;
   }
 
-  .microphone-notice {
-    background-color: #d1ecf1;
-    color: #0c5460;
+  .instructions {
+    background-color: #e7f3fe;
+    color: #084298;
     padding: 12px;
     border-radius: 8px;
     margin-bottom: 20px;
@@ -57,19 +57,19 @@
     justify-content: center;
   }
 
-  .record-btn {
+  .main-btn {
     background-color: #28a745;
   }
 
-  .record-btn:hover {
-    background-color: #218838;
+  .main-btn.recording {
+    background-color: #dc3545;
   }
 
-  .try-again-btn {
+  .retry-btn {
     background-color: #007bff;
   }
 
-  .try-again-btn:hover {
+  .retry-btn:hover {
     background-color: #0056b3;
   }
 
@@ -101,10 +101,18 @@
   }
 
   #successMessage {
-    margin-top: 15px;
+    margin-top: 20px;
+    font-size: 1.5em;
     color: green;
-    font-size: 1.3em;
     font-weight: bold;
+    animation: successFade 1s ease-in-out;
+    display: none;
+  }
+
+  @keyframes successFade {
+    0% { transform: scale(0.8); opacity: 0; }
+    50% { transform: scale(1.1); opacity: 1; }
+    100% { transform: scale(1); }
   }
 
   #error {
@@ -123,16 +131,23 @@
     animation: blink 1s infinite;
   }
 
-  #countdown {
-    font-size: 2em;
-    margin: 15px 0;
-    font-weight: bold;
-    color: #ff4500;
-  }
-
   @keyframes blink {
     0%, 50%, 100% { opacity: 1; }
     25%, 75% { opacity: 0; }
+  }
+
+  #countdown {
+    font-size: 3em;
+    color: #ff4500;
+    margin-top: 20px;
+    display: none;
+    animation: countdownAnimation 1s ease-out infinite;
+  }
+
+  @keyframes countdownAnimation {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.5); opacity: 0.7; }
+    100% { transform: scale(1); opacity: 1; }
   }
 
   /* Mobile */
@@ -149,7 +164,7 @@
     .correct, .incorrect {
       font-size: 1em;
     }
-    #scoreDisplay, #successMessage {
+    #scoreDisplay {
       font-size: 1.2em;
     }
   }
@@ -158,7 +173,11 @@
 <body>
 
 <div class="notice">⚠️ מומלץ להשתמש במחשב. ייתכן שמכשירים מסוימים לא יתמכו בתוכנה באופן מלא.</div>
-<div class="microphone-notice">🎙️ דברו חזק ומהר אל תוך המיקרופון. המערכת מזהה דיבור רציף וברור. אם יש הפסקות בין מילה למילה, המערכת תחשוב שלא אמרתם את המילה כראוי.</div>
+
+<div class="instructions">
+📢 תדברו חזק ומהר אל תוך המיקרופון. המערכת מזהה דיבור רציף וברור. 
+אם יש הפסקות בין מילה למילה, המערכת תחשוב שלא אמרתם את המילה כראוי.
+</div>
 
 <h1>Pronunciation Practice</h1>
 <div class="target-sentence" id="target"></div>
@@ -166,19 +185,21 @@
 <div id="recordingIndicator"></div>
 <div id="countdown"></div>
 
-<button class="record-btn" id="recordButton" onclick="handleRecordButton()">🎙️ Start Recording</button>
-<button class="try-again-btn" id="tryAgainButton" style="display:none;" onclick="resetPractice()">🔄 Try Again</button>
-
+<button id="mainButton" class="main-btn" onclick="toggleRecording()">🎙️ Start Recording</button>
 <div id="spoken"></div>
 <div id="result"></div>
 <div id="scoreDisplay"></div>
-<div id="successMessage"></div>
+<div id="successMessage">🎉 Excellent! 100% Success!</div>
 <div id="error"></div>
+<button id="retryButton" class="retry-btn" onclick="resetPage()" style="display:none;">🔄 Try Again</button>
 
-<!-- Add audio countdown -->
-<audio id="beep3" src="https://assets.mixkit.co/sfx/preview/mixkit-classic-short-alarm-995.mp3"></audio>
-<audio id="beep2" src="https://assets.mixkit.co/sfx/preview/mixkit-classic-short-alarm-995.mp3"></audio>
-<audio id="beep1" src="https://assets.mixkit.co/sfx/preview/mixkit-classic-short-alarm-995.mp3"></audio>
+<!-- Audio countdown sounds -->
+<audio id="beep3" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
+<audio id="beep2" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
+<audio id="beep1" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
+
+<audio id="startSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
+<audio id="stopSound" src="https://actions.google.com/sounds/v1/cartoon/pop.ogg"></audio>
 
 <script>
 const target = decodeURIComponent(new URLSearchParams(window.location.search).get("sentence")) || "I like pizza";
@@ -187,11 +208,16 @@ document.getElementById("target").textContent = target;
 let recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
 let finalTranscript = "";
 let isRecording = false;
+let countdownTimer;
+let isSessionActive = true;
 
 const recordingIndicator = document.getElementById('recordingIndicator');
-const recordButton = document.getElementById('recordButton');
-const tryAgainButton = document.getElementById('tryAgainButton');
-const countdownElement = document.getElementById('countdown');
+const mainButton = document.getElementById('mainButton');
+const retryButton = document.getElementById('retryButton');
+const successMessage = document.getElementById('successMessage');
+const startSound = document.getElementById('startSound');
+const stopSound = document.getElementById('stopSound');
+const countdownDisplay = document.getElementById('countdown');
 
 const beep3 = document.getElementById('beep3');
 const beep2 = document.getElementById('beep2');
@@ -201,16 +227,12 @@ recognition.lang = "en-US";
 recognition.interimResults = true;
 
 recognition.onresult = (event) => {
-  let interimTranscript = "";
   for (let i = event.resultIndex; i < event.results.length; ++i) {
     const transcript = event.results[i][0].transcript;
     if (event.results[i].isFinal) {
       finalTranscript += transcript + " ";
-    } else {
-      interimTranscript += transcript;
     }
   }
-  document.getElementById("spoken").innerHTML = `<p><strong>You said:</strong> ${interimTranscript}</p>`;
 };
 
 recognition.onerror = (event) => {
@@ -222,31 +244,36 @@ recognition.onerror = (event) => {
 };
 
 recognition.onend = () => {
-  if (isRecording) return; // Don't process if still recording
-  processResult(finalTranscript.trim().toLowerCase());
-  hideRecordingIndicator();
+  if (isRecording) {
+    recognition.start();
+  } else {
+    processResult(finalTranscript.trim().toLowerCase());
+    finalTranscript = "";
+  }
 };
 
-function handleRecordButton() {
-  if (!isRecording) {
+function toggleRecording() {
+  if (!isRecording && isSessionActive) {
     startCountdown();
-  } else {
+  } else if (isRecording) {
     stopRecording();
   }
 }
 
 function startCountdown() {
   let count = 3;
-  countdownElement.textContent = count;
+  countdownDisplay.style.display = 'block';
   playBeep(count);
-  const countdownInterval = setInterval(() => {
+  countdownDisplay.textContent = count;
+
+  countdownTimer = setInterval(() => {
     count--;
     if (count > 0) {
-      countdownElement.textContent = count;
       playBeep(count);
+      countdownDisplay.textContent = count;
     } else {
-      clearInterval(countdownInterval);
-      countdownElement.textContent = '';
+      clearInterval(countdownTimer);
+      countdownDisplay.style.display = 'none';
       startRecording();
     }
   }, 1000);
@@ -262,12 +289,11 @@ function startRecording() {
   try {
     recognition.start();
     isRecording = true;
-    finalTranscript = "";
     document.getElementById("error").textContent = "";
-    recordButton.textContent = "🛑 Stop Recording";
     showRecordingIndicator();
-    recordButton.disabled = false;
-    tryAgainButton.style.display = 'none';
+    updateButtonState();
+    hideResults();
+    startSound.play();
   } catch (e) {
     console.log("Recognition already started");
   }
@@ -275,10 +301,14 @@ function startRecording() {
 
 function stopRecording() {
   if (isRecording) {
-    recognition.stop();
     isRecording = false;
-    recordButton.textContent = "🎙️ Start Recording";
-    tryAgainButton.style.display = 'inline-block';
+    isSessionActive = false;
+    recognition.stop();
+    hideRecordingIndicator();
+    updateButtonState();
+    stopSound.play();
+    clearInterval(countdownTimer);
+    countdownDisplay.style.display = 'none';
   }
 }
 
@@ -304,10 +334,26 @@ function processResult(spokenText) {
   document.getElementById("scoreDisplay").innerHTML = `✅ Success: ${correct}/${expectedWords.length} (${score}%)`;
 
   if (score === 100) {
-    document.getElementById("successMessage").innerHTML = "🎉 Excellent! 100% Success!";
-  } else {
-    document.getElementById("successMessage").innerHTML = "";
+    successMessage.style.display = "block";
   }
+
+  retryButton.style.display = 'inline-block';
+}
+
+function resetPage() {
+  finalTranscript = "";
+  isRecording = false;
+  isSessionActive = true;
+  hideRecordingIndicator();
+  clearInterval(countdownTimer);
+  countdownDisplay.style.display = 'none';
+  document.getElementById("spoken").innerHTML = "";
+  document.getElementById("result").innerHTML = "";
+  document.getElementById("scoreDisplay").innerHTML = "";
+  document.getElementById("error").textContent = "";
+  successMessage.style.display = "none";
+  retryButton.style.display = "none";
+  updateButtonState();
 }
 
 function showRecordingIndicator() {
@@ -318,18 +364,24 @@ function hideRecordingIndicator() {
   recordingIndicator.style.display = 'none';
 }
 
-function resetPractice() {
-  finalTranscript = "";
-  isRecording = false;
-  hideRecordingIndicator();
+function updateButtonState() {
+  if (isRecording) {
+    mainButton.textContent = "🛑 Stop Recording";
+    mainButton.classList.add("recording");
+  } else {
+    mainButton.textContent = "🎙️ Start Recording";
+    mainButton.classList.remove("recording");
+  }
+
+  mainButton.disabled = !isSessionActive;
+}
+
+function hideResults() {
   document.getElementById("spoken").innerHTML = "";
   document.getElementById("result").innerHTML = "";
   document.getElementById("scoreDisplay").innerHTML = "";
-  document.getElementById("successMessage").innerHTML = "";
-  document.getElementById("error").textContent = "";
-  recordButton.disabled = false;
-  recordButton.textContent = "🎙️ Start Recording";
-  tryAgainButton.style.display = 'none';
+  successMessage.style.display = "none";
+  retryButton.style.display = "none";
 }
 </script>
 
