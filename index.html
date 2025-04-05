@@ -274,9 +274,10 @@ function startCountdown() {
 }
 
 function playBeep() {
-  beep.currentTime = 0;
-  beep.play();
+  const sound = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
+  sound.play();
 }
+
 
 
 function startRecording() {
