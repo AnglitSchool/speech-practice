@@ -11,6 +11,7 @@
     text-align: center;
     padding: 40px 20px;
     color: #1a1a1a;
+    transition: background-color 0.5s ease;
   }
 
   .notice {
@@ -193,11 +194,7 @@
 <div id="error"></div>
 <button id="retryButton" class="retry-btn" onclick="resetPage()" style="display:none;">🔄 Try Again</button>
 
-<!-- Audio countdown sounds -->
-<audio id="beep3" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
-<audio id="beep2" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
-<audio id="beep1" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
-
+<audio id="beep" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
 <audio id="startSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
 <audio id="stopSound" src="https://actions.google.com/sounds/v1/cartoon/pop.ogg"></audio>
 
@@ -217,11 +214,8 @@ const retryButton = document.getElementById('retryButton');
 const successMessage = document.getElementById('successMessage');
 const startSound = document.getElementById('startSound');
 const stopSound = document.getElementById('stopSound');
+const beep = document.getElementById('beep');
 const countdownDisplay = document.getElementById('countdown');
-
-const beep3 = document.getElementById('beep3');
-const beep2 = document.getElementById('beep2');
-const beep1 = document.getElementById('beep1');
 
 recognition.lang = "en-US";
 recognition.interimResults = true;
@@ -263,13 +257,13 @@ function toggleRecording() {
 function startCountdown() {
   let count = 3;
   countdownDisplay.style.display = 'block';
-  playBeep(count);
+  playBeep();
   countdownDisplay.textContent = count;
 
   countdownTimer = setInterval(() => {
     count--;
     if (count > 0) {
-      playBeep(count);
+      playBeep();
       countdownDisplay.textContent = count;
     } else {
       clearInterval(countdownTimer);
@@ -279,10 +273,8 @@ function startCountdown() {
   }, 1000);
 }
 
-function playBeep(count) {
-  if (count === 3) beep3.play();
-  if (count === 2) beep2.play();
-  if (count === 1) beep1.play();
+function playBeep() {
+  beep.play();
 }
 
 function startRecording() {
@@ -335,6 +327,9 @@ function processResult(spokenText) {
 
   if (score === 100) {
     successMessage.style.display = "block";
+    document.body.style.backgroundColor = "#c8f7c5";
+  } else {
+    document.body.style.backgroundColor = "#f4faff";
   }
 
   retryButton.style.display = 'inline-block';
@@ -353,6 +348,7 @@ function resetPage() {
   document.getElementById("error").textContent = "";
   successMessage.style.display = "none";
   retryButton.style.display = "none";
+  document.body.style.backgroundColor = "#f4faff";
   updateButtonState();
 }
 
