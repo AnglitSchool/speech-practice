@@ -274,8 +274,10 @@ function startCountdown() {
 }
 
 function playBeep() {
+  beep.currentTime = 0;
   beep.play();
 }
+
 
 function startRecording() {
   try {
