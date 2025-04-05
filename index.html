@@ -2,45 +2,43 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Pronunciation Practice</title>
+  <title>Anglit School | Pronunciation Practice</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Segoe UI', sans-serif;
       background: #f4faff;
-      text-align: center;
       padding: 40px;
+      text-align: center;
       color: #1a1a1a;
+      transition: background-color 0.5s ease;
     }
     h1 {
-      font-size: 2em;
+      font-size: 2.5em;
       color: #004080;
     }
+    .instructions {
+      font-size: 1.1em;
+      color: #333;
+      margin-bottom: 20px;
+    }
     .target-sentence {
-      font-size: 1.4em;
+      font-size: 1.6em;
       margin: 20px 0;
       font-weight: bold;
     }
     button {
-      padding: 12px 20px;
-      font-size: 16px;
-      margin: 10px;
+      padding: 12px 24px;
+      font-size: 1em;
+      background-color: #007acc;
+      color: white;
       border: none;
       border-radius: 8px;
       cursor: pointer;
-      transition: background 0.3s;
-      color: white;
+      transition: background 0.3s ease;
+      margin: 5px;
     }
-    .record-btn {
-      background-color: #28a745;
-    }
-    .record-btn:hover {
-      background-color: #218838;
-    }
-    .stop-btn {
-      background-color: #dc3545;
-    }
-    .stop-btn:hover {
-      background-color: #c82333;
+    button:hover {
+      background-color: #005fa3;
     }
     .correct {
       color: white;
@@ -63,132 +61,175 @@
       font-size: 1.2em;
       color: #004080;
     }
+    #successMessage {
+      margin-top: 15px;
+      font-size: 1.4em;
+      color: green;
+      font-weight: bold;
+      opacity: 0;
+      transform: scale(0.8);
+      animation: popUp 0.6s forwards;
+    }
+    @keyframes popUp {
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
     #error {
       margin-top: 15px;
       color: red;
       font-weight: bold;
     }
-    /* Recording indicator */
-    #recordingIndicator {
-      display: none;
-      margin: 10px auto;
-      width: 20px;
-      height: 20px;
-      background-color: red;
-      border-radius: 50%;
-      animation: blink 1s infinite;
-    }
-    @keyframes blink {
-      0%, 50%, 100% { opacity: 1; }
-      25%, 75% { opacity: 0; }
-    }
   </style>
 </head>
 <body>
   <h1>Pronunciation Practice</h1>
+  <div class="instructions">
+    📢 דבר חזק, ברור ומהר אל תוך המיקרופון כדי שהתוכנה תעבוד בצורה מדויקת!
+  </div>
   <div class="target-sentence" id="target"></div>
-
-  <!-- Recording Indicator -->
-  <div id="recordingIndicator"></div>
-
-  <button class="record-btn" onclick="startRecording()">🎙️ Start Recording</button>
-  <button class="stop-btn" onclick="stopRecording()">🛑 Stop Recording</button>
-
+  <button onclick="toggleRecording()" id="recordBtn">🎤 Start Speaking</button>
   <div id="spoken"></div>
   <div id="result"></div>
   <div id="scoreDisplay"></div>
+  <div id="successMessage"></div>
   <div id="error"></div>
+  <button onclick="location.reload()" style="display:none;" id="retryButton">🔄 נסה שוב</button>
 
   <script>
     const target = decodeURIComponent(new URLSearchParams(window.location.search).get("sentence")) || "I like pizza";
     document.getElementById("target").textContent = target;
 
-    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-    let finalTranscript = "";
+    let recognition;
     let isRecording = false;
-    const recordingIndicator = document.getElementById('recordingIndicator');
+    let finalTranscript = "";
 
-    recognition.lang = "en-US";
-    recognition.interimResults = true;
-    recognition.continuous = true; // הכי חשוב!! מונע סיום אוטומטי
-
-    recognition.onresult = (event) => {
-      let interimTranscript = "";
-      for (let i = event.resultIndex; i < event.results.length; ++i) {
-        const transcript = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          finalTranscript += transcript + " ";
-        } else {
-          interimTranscript += transcript;
+    // פונקציה לחישוב מרחק לֶוֶנְשְטֵיין (Levenshtein Distance)
+    function levenshteinDistance(a, b) {
+      const matrix = Array.from({ length: b.length + 1 }, (_, i) => [i]);
+      for (let j = 0; j <= a.length; j++) {
+        matrix[0][j] = j;
+      }
+      for (let i = 1; i <= b.length; i++) {
+        for (let j = 1; j <= a.length; j++) {
+          if (b[i - 1] === a[j - 1]) {
+            matrix[i][j] = matrix[i - 1][j - 1];
+          } else {
+            matrix[i][j] = Math.min(
+              matrix[i - 1][j - 1] + 1, // החלפה
+              matrix[i][j - 1] + 1,     // הוספה
+              matrix[i - 1][j] + 1      // מחיקה
+            );
+          }
         }
       }
-      document.getElementById("spoken").innerHTML = `<p><strong>You said:</strong> ${interimTranscript}</p>`;
-    };
-
-    recognition.onerror = (event) => {
-      if (event.error === "not-allowed") {
-        document.getElementById("error").textContent = "יש לאפשר שימוש במיקרופון כדי להשתמש בתרגול.";
-      } else {
-        document.getElementById("error").textContent = "שגיאה: " + event.error;
-      }
-    };
-
-    recognition.onend = () => {
-      // אל תעשה כלום בסיום — מונע מחיקה אוטומטית
-      if (isRecording) {
-        recognition.start(); // ממשיך שוב אם סגר בטעות
-      }
-    };
-
-    function startRecording() {
-      try {
-        isRecording = true;
-        finalTranscript = ""; // מנקה לפני התחלה חדשה
-        recognition.start();
-        document.getElementById("error").textContent = "";
-        showRecordingIndicator();
-      } catch (e) {
-        console.log("Recognition already started");
-      }
+      return matrix[b.length][a.length];
     }
 
-    function stopRecording() {
-      if (isRecording) {
-        isRecording = false;
+    // פונקציה לבדוק דמיון מילים באחוזים
+    function similarity(a, b) {
+      const distance = levenshteinDistance(a, b);
+      const maxLen = Math.max(a.length, b.length);
+      return maxLen === 0 ? 1 : (1 - distance / maxLen);
+    }
+
+    function toggleRecording() {
+      if (!recognition) {
+        recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.lang = "en-US";
+        recognition.interimResults = false;
+        recognition.continuous = true;
+
+        recognition.onresult = (event) => {
+          finalTranscript = "";
+          for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+              finalTranscript += event.results[i][0].transcript.trim() + " ";
+            }
+          }
+          document.getElementById("spoken").innerHTML = `<p><strong>You said:</strong> ${finalTranscript.trim()}</p>`;
+        };
+
+        recognition.onerror = (event) => {
+          if (event.error === "not-allowed") {
+            document.getElementById("error").textContent = "יש לאפשר שימוש במיקרופון כדי להשתמש בתרגול.";
+          } else {
+            document.getElementById("error").textContent = "שגיאה: " + event.error;
+          }
+        };
+
+        recognition.onend = () => {
+          if (!isRecording) {
+            processResult(finalTranscript.trim().toLowerCase());
+            finalTranscript = "";
+          }
+        };
+      }
+
+      if (!isRecording) {
+        finalTranscript = "";
+        document.getElementById("spoken").innerHTML = "";
+        document.getElementById("result").innerHTML = "";
+        document.getElementById("scoreDisplay").innerHTML = "";
+        document.getElementById("error").textContent = "";
+        document.getElementById("successMessage").textContent = "";
+        document.getElementById("retryButton").style.display = "none";
+        document.body.style.backgroundColor = "#f4faff";
+
+        recognition.start();
+        document.getElementById("recordBtn").textContent = "🛑 Stop Speaking";
+        isRecording = true;
+      } else {
         recognition.stop();
-        hideRecordingIndicator();
-        processResult(finalTranscript.trim().toLowerCase());
+        document.getElementById("recordBtn").textContent = "🎤 Start Speaking";
+        isRecording = false;
       }
     }
 
     function processResult(spokenText) {
-      const expectedWords = target.toLowerCase().split(" ");
-      const spokenWords = spokenText.split(" ");
+      const clean = (text) => text
+        .toLowerCase()
+        .replace(/[.,?!]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      const cleanedText = clean(spokenText);
+      const words = cleanedText.split(" ");
+      const filteredWords = words.filter((word, index, arr) => index === 0 || word !== arr[index - 1]);
+      const finalSpokenText = filteredWords.join(" ");
+
+      const expectedWords = clean(target).split(" ");
+      const spokenWords = finalSpokenText.split(" ");
 
       let correct = 0;
       let result = "";
 
-      expectedWords.forEach((word, index) => {
-        if (spokenWords[index] === word) {
-          result += `<span class='correct'>${word}</span>`;
+      expectedWords.forEach((expectedWord, index) => {
+        const spokenWord = spokenWords[index] || "";
+        const similarityScore = similarity(expectedWord, spokenWord);
+
+        if (similarityScore >= 0.7) { // רף של 70% דמיון
+          result += `<span class='correct'>${expectedWord}</span>`;
           correct++;
         } else {
-          result += `<span class='incorrect'>${word}</span>`;
+          result += `<span class='incorrect'>${expectedWord}</span>`;
         }
       });
 
       const score = Math.round((correct / expectedWords.length) * 100);
-      document.getElementById("spoken").innerHTML = `<p><strong>You said:</strong> ${spokenText}</p>`;
+      document.getElementById("spoken").innerHTML = `<p><strong>You said:</strong> ${finalSpokenText}</p>`;
       document.getElementById("result").innerHTML = result;
       document.getElementById("scoreDisplay").innerHTML = `✅ Success: ${correct}/${expectedWords.length} (${score}%)`;
-    }
+      document.getElementById("error").textContent = "";
 
-    function showRecordingIndicator() {
-      recordingIndicator.style.display = 'block';
-    }
+      if (correct === expectedWords.length) {
+        document.getElementById("successMessage").textContent = "🎉 כל הכבוד! הצלחת את כל המשפט!";
+        document.getElementById("successMessage").style.animation = "popUp 0.6s forwards";
+        document.body.style.backgroundColor = "#d4f9d4";
+      }
 
-    function hideRecordingIndicator() {
-      recordingIndicator.style.display = 'none';
+      document.getElementById("retryButton").style.display = "inline-block";
     }
   </script>
 </body>
