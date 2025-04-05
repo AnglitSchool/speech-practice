@@ -131,16 +131,23 @@
     animation: blink 1s infinite;
   }
 
-  #countdown {
-    font-size: 2em;
-    color: #004080;
-    margin-top: 20px;
-    display: none;
-  }
-
   @keyframes blink {
     0%, 50%, 100% { opacity: 1; }
     25%, 75% { opacity: 0; }
+  }
+
+  #countdown {
+    font-size: 3em;
+    color: #ff4500;
+    margin-top: 20px;
+    display: none;
+    animation: countdownAnimation 1s ease-out infinite;
+  }
+
+  @keyframes countdownAnimation {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.5); opacity: 0.7; }
+    100% { transform: scale(1); opacity: 1; }
   }
 
   /* Mobile */
@@ -249,13 +256,13 @@ function toggleRecording() {
 function startCountdown() {
   let countdown = 3;
   countdownDisplay.style.display = 'block';
-  countdownDisplay.textContent = `Starting in ${countdown}...`;
+  countdownDisplay.textContent = countdown;
 
   countdownTimer = setInterval(() => {
     countdownSound.play();
     countdown--;
     if (countdown > 0) {
-      countdownDisplay.textContent = `Starting in ${countdown}...`;
+      countdownDisplay.textContent = countdown;
     } else {
       clearInterval(countdownTimer);
       countdownDisplay.style.display = 'none';
@@ -348,11 +355,7 @@ function updateButtonState() {
     mainButton.classList.remove("recording");
   }
 
-  if (!isSessionActive) {
-    mainButton.disabled = true;
-  } else {
-    mainButton.disabled = false;
-  }
+  mainButton.disabled = !isSessionActive;
 }
 
 function hideResults() {
