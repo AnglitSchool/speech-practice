@@ -201,6 +201,8 @@
 const target = decodeURIComponent(new URLSearchParams(window.location.search).get("sentence")) || "I like pizza";
 document.getElementById("target").textContent = target;
 
+const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
 let recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
 let finalTranscript = "";
 let isRecording = false;
@@ -247,7 +249,11 @@ recognition.onend = () => {
 
 function toggleRecording() {
   if (!isRecording && isSessionActive) {
-    startCountdown();
+    if (isMobile) {
+      startRecording();
+    } else {
+      startCountdown();
+    }
   } else if (isRecording) {
     stopRecording();
   }
