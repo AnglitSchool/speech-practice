@@ -151,7 +151,6 @@
     100% { transform: scale(1); opacity: 1; }
   }
 
-  /* Mobile */
   @media (max-width: 600px) {
     h1 { font-size: 1.8em; }
     .target-sentence { font-size: 1.4em; }
@@ -278,8 +277,6 @@ function playBeep() {
   sound.play();
 }
 
-
-
 function startRecording() {
   try {
     recognition.start();
@@ -339,20 +336,7 @@ function processResult(spokenText) {
 }
 
 function resetPage() {
-  finalTranscript = "";
-  isRecording = false;
-  isSessionActive = true;
-  hideRecordingIndicator();
-  clearInterval(countdownTimer);
-  countdownDisplay.style.display = 'none';
-  document.getElementById("spoken").innerHTML = "";
-  document.getElementById("result").innerHTML = "";
-  document.getElementById("scoreDisplay").innerHTML = "";
-  document.getElementById("error").textContent = "";
-  successMessage.style.display = "none";
-  retryButton.style.display = "none";
-  document.body.style.backgroundColor = "#f4faff";
-  updateButtonState();
+  location.reload();
 }
 
 function showRecordingIndicator() {
