@@ -122,6 +122,13 @@
     animation: blink 1s infinite;
   }
 
+  #countdown {
+    font-size: 2em;
+    color: #004080;
+    margin-top: 20px;
+    display: none;
+  }
+
   @keyframes blink {
     0%, 50%, 100% { opacity: 1; }
     25%, 75% { opacity: 0; }
@@ -155,6 +162,7 @@
 <div class="target-sentence" id="target"></div>
 
 <div id="recordingIndicator"></div>
+<div id="countdown"></div>
 
 <button id="mainButton" class="main-btn" onclick="toggleRecording()">🎙️ Start Recording</button>
 <div id="spoken"></div>
@@ -174,6 +182,7 @@ document.getElementById("target").textContent = target;
 let recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
 let finalTranscript = "";
 let isRecording = false;
+let countdownTimer;
 
 const recordingIndicator = document.getElementById('recordingIndicator');
 const mainButton = document.getElementById('mainButton');
@@ -181,6 +190,7 @@ const retryButton = document.getElementById('retryButton');
 const successMessage = document.getElementById('successMessage');
 const startSound = document.getElementById('startSound');
 const stopSound = document.getElementById('stopSound');
+const countdownDisplay = document.getElementById('countdown');
 
 recognition.lang = "en-US";
 recognition.interimResults = true;
@@ -204,7 +214,7 @@ recognition.onerror = (event) => {
 
 recognition.onend = () => {
   if (isRecording) {
-    recognition.start(); // ממשיך להאזין אם לא סיימת
+    recognition.start();
   } else {
     processResult(finalTranscript.trim().toLowerCase());
     finalTranscript = "";
@@ -214,10 +224,27 @@ recognition.onend = () => {
 
 function toggleRecording() {
   if (!isRecording) {
-    startRecording();
+    startCountdown();
   } else {
     stopRecording();
   }
+}
+
+function startCountdown() {
+  let countdown = 3;
+  countdownDisplay.style.display = 'block';
+  countdownDisplay.textContent = `Starting in ${countdown}...`;
+
+  countdownTimer = setInterval(() => {
+    countdown--;
+    if (countdown > 0) {
+      countdownDisplay.textContent = `Starting in ${countdown}...`;
+    } else {
+      clearInterval(countdownTimer);
+      countdownDisplay.style.display = 'none';
+      startRecording();
+    }
+  }, 1000);
 }
 
 function startRecording() {
@@ -241,6 +268,8 @@ function stopRecording() {
     hideRecordingIndicator();
     updateButtonState();
     stopSound.play();
+    clearInterval(countdownTimer);
+    countdownDisplay.style.display = 'none';
   }
 }
 
