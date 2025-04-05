@@ -15,10 +15,6 @@
       font-size: 2em;
       color: #004080;
     }
-    .instructions {
-      margin-bottom: 20px;
-      color: #333;
-    }
     .target-sentence {
       font-size: 1.4em;
       margin: 20px 0;
@@ -34,11 +30,17 @@
       transition: background 0.3s;
       color: white;
     }
-    #recordBtn {
+    .record-btn {
       background-color: #28a745;
     }
-    #recordBtn:hover {
+    .record-btn:hover {
       background-color: #218838;
+    }
+    .stop-btn {
+      background-color: #dc3545;
+    }
+    .stop-btn:hover {
+      background-color: #c82333;
     }
     .correct {
       color: white;
@@ -66,11 +68,12 @@
       color: red;
       font-weight: bold;
     }
+    /* Recording indicator */
     #recordingIndicator {
       display: none;
-      margin: 0 auto 10px;
-      width: 14px;
-      height: 14px;
+      margin: 10px auto;
+      width: 20px;
+      height: 20px;
       background-color: red;
       border-radius: 50%;
       animation: blink 1s infinite;
@@ -79,109 +82,83 @@
       0%, 50%, 100% { opacity: 1; }
       25%, 75% { opacity: 0; }
     }
-    #tryAgainBtn {
-      margin-top: 20px;
-      background-color: #007bff;
-      padding: 10px 20px;
-      border-radius: 8px;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-    #tryAgainBtn:hover {
-      background-color: #0056b3;
-    }
   </style>
 </head>
 <body>
   <h1>Pronunciation Practice</h1>
-  <div class="instructions">דבר חזק, ברור ומהר אל תוך המיקרופון כדי שהתוכנה תעבוד בצורה מדויקת 🎙️</div>
   <div class="target-sentence" id="target"></div>
 
+  <!-- Recording Indicator -->
   <div id="recordingIndicator"></div>
 
-  <button id="recordBtn" onclick="toggleRecording()">🎙️ Start Speaking</button>
+  <button class="record-btn" onclick="startRecording()">🎙️ Start Recording</button>
+  <button class="stop-btn" onclick="stopRecording()">🛑 Stop Recording</button>
 
   <div id="spoken"></div>
   <div id="result"></div>
   <div id="scoreDisplay"></div>
   <div id="error"></div>
-  <button id="tryAgainBtn" style="display:none;" onclick="resetPage()">🔄 נסה שוב</button>
 
   <script>
     const target = decodeURIComponent(new URLSearchParams(window.location.search).get("sentence")) || "I like pizza";
     document.getElementById("target").textContent = target;
 
-    let recognition;
-    let isRecording = false;
+    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
     let finalTranscript = "";
+    let isRecording = false;
+    const recordingIndicator = document.getElementById('recordingIndicator');
 
-    const recordBtn = document.getElementById("recordBtn");
-    const recordingIndicator = document.getElementById("recordingIndicator");
+    recognition.lang = "en-US";
+    recognition.interimResults = true;
+    recognition.continuous = true; // הכי חשוב!! מונע סיום אוטומטי
 
-    function initializeRecognition() {
-      recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-      recognition.lang = "en-US";
-      recognition.interimResults = true;
-      finalTranscript = "";
-
-      recognition.onresult = (event) => {
-        let interimTranscript = "";
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          const transcript = event.results[i][0].transcript;
-          if (event.results[i].isFinal) {
-            finalTranscript += transcript + " ";
-          } else {
-            interimTranscript += transcript;
-          }
-        }
-        document.getElementById("spoken").innerHTML = `<p><strong>You said:</strong> ${interimTranscript}</p>`;
-      };
-
-      recognition.onerror = (event) => {
-        if (event.error === "not-allowed") {
-          document.getElementById("error").textContent = "יש לאפשר שימוש במיקרופון כדי להשתמש בתרגול.";
+    recognition.onresult = (event) => {
+      let interimTranscript = "";
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript + " ";
         } else {
-          document.getElementById("error").textContent = "שגיאה: " + event.error;
+          interimTranscript += transcript;
         }
-      };
-
-      recognition.onend = () => {
-        if (isRecording) {
-          stopRecording(); 
-        } else {
-          processResult(finalTranscript.trim().toLowerCase());
-        }
-      };
-    }
-
-    initializeRecognition();
-
-    function toggleRecording() {
-      if (!isRecording) {
-        startRecording();
-      } else {
-        stopRecording();
       }
-    }
+      document.getElementById("spoken").innerHTML = `<p><strong>You said:</strong> ${interimTranscript}</p>`;
+    };
+
+    recognition.onerror = (event) => {
+      if (event.error === "not-allowed") {
+        document.getElementById("error").textContent = "יש לאפשר שימוש במיקרופון כדי להשתמש בתרגול.";
+      } else {
+        document.getElementById("error").textContent = "שגיאה: " + event.error;
+      }
+    };
+
+    recognition.onend = () => {
+      // אל תעשה כלום בסיום — מונע מחיקה אוטומטית
+      if (isRecording) {
+        recognition.start(); // ממשיך שוב אם סגר בטעות
+      }
+    };
 
     function startRecording() {
       try {
-        recognition.start();
         isRecording = true;
-        recordBtn.textContent = "🛑 Stop Recording";
-        showRecordingIndicator();
+        finalTranscript = ""; // מנקה לפני התחלה חדשה
+        recognition.start();
         document.getElementById("error").textContent = "";
+        showRecordingIndicator();
       } catch (e) {
         console.log("Recognition already started");
       }
     }
 
     function stopRecording() {
-      recognition.stop();
-      isRecording = false;
-      hideRecordingIndicator();
-      recordBtn.textContent = "🎙️ Start Speaking";
+      if (isRecording) {
+        isRecording = false;
+        recognition.stop();
+        hideRecordingIndicator();
+        processResult(finalTranscript.trim().toLowerCase());
+      }
     }
 
     function processResult(spokenText) {
@@ -204,7 +181,6 @@
       document.getElementById("spoken").innerHTML = `<p><strong>You said:</strong> ${spokenText}</p>`;
       document.getElementById("result").innerHTML = result;
       document.getElementById("scoreDisplay").innerHTML = `✅ Success: ${correct}/${expectedWords.length} (${score}%)`;
-      document.getElementById("tryAgainBtn").style.display = 'inline-block';
     }
 
     function showRecordingIndicator() {
@@ -213,10 +189,6 @@
 
     function hideRecordingIndicator() {
       recordingIndicator.style.display = 'none';
-    }
-
-    function resetPage() {
-      window.location.reload();
     }
   </script>
 </body>
