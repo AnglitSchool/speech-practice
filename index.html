@@ -203,7 +203,7 @@ document.getElementById("target").textContent = target;
 
 const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-let recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+let recognition;
 let finalTranscript = "";
 let isRecording = false;
 let countdownTimer;
@@ -218,34 +218,41 @@ const stopSound = document.getElementById('stopSound');
 const beep = document.getElementById('beep');
 const countdownDisplay = document.getElementById('countdown');
 
-recognition.lang = "en-US";
-recognition.interimResults = true;
+function createRecognition() {
+  const newRecognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+  newRecognition.lang = "en-US";
+  newRecognition.interimResults = true;
 
-recognition.onresult = (event) => {
-  for (let i = event.resultIndex; i < event.results.length; ++i) {
-    const transcript = event.results[i][0].transcript;
-    if (event.results[i].isFinal) {
-      finalTranscript += transcript + " ";
+  newRecognition.onresult = (event) => {
+    for (let i = event.resultIndex; i < event.results.length; ++i) {
+      const transcript = event.results[i][0].transcript;
+      if (event.results[i].isFinal) {
+        finalTranscript += transcript + " ";
+      }
     }
-  }
-};
+  };
 
-recognition.onerror = (event) => {
-  if (event.error === "not-allowed") {
-    document.getElementById("error").textContent = "יש לאפשר שימוש במיקרופון כדי להשתמש בתרגול.";
-  } else {
-    document.getElementById("error").textContent = "שגיאה: " + event.error;
-  }
-};
+  newRecognition.onerror = (event) => {
+    if (event.error === "not-allowed") {
+      document.getElementById("error").textContent = "יש לאפשר שימוש במיקרופון כדי להשתמש בתרגול.";
+    } else {
+      document.getElementById("error").textContent = "שגיאה: " + event.error;
+    }
+  };
 
-recognition.onend = () => {
-  if (isRecording) {
-    recognition.start();
-  } else {
-    processResult(finalTranscript.trim().toLowerCase());
-    finalTranscript = "";
-  }
-};
+  newRecognition.onend = () => {
+    if (isRecording) {
+      newRecognition.start();
+    } else {
+      processResult(finalTranscript.trim().toLowerCase());
+      finalTranscript = "";
+    }
+  };
+
+  return newRecognition;
+}
+
+recognition = createRecognition();
 
 function toggleRecording() {
   if (!isRecording && isSessionActive) {
@@ -342,6 +349,10 @@ function processResult(spokenText) {
 }
 
 function resetPage() {
+  finalTranscript = "";
+  isRecording = false;
+  isSessionActive = true;
+  recognition = createRecognition();
   location.reload();
 }
 
