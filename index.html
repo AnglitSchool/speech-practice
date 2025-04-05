@@ -48,20 +48,20 @@
     justify-content: center;
   }
 
-  .record-btn {
+  .main-btn {
     background-color: #28a745;
   }
 
-  .record-btn:hover {
-    background-color: #218838;
-  }
-
-  .stop-btn {
+  .main-btn.recording {
     background-color: #dc3545;
   }
 
-  .stop-btn:hover {
-    background-color: #c82333;
+  .retry-btn {
+    background-color: #007bff;
+  }
+
+  .retry-btn:hover {
+    background-color: #0056b3;
   }
 
   .correct {
@@ -89,6 +89,21 @@
     font-size: 1.3em;
     color: #004080;
     font-weight: bold;
+  }
+
+  #successMessage {
+    margin-top: 20px;
+    font-size: 1.5em;
+    color: green;
+    font-weight: bold;
+    animation: successFade 1s ease-in-out;
+    display: none;
+  }
+
+  @keyframes successFade {
+    0% { transform: scale(0.8); opacity: 0; }
+    50% { transform: scale(1.1); opacity: 1; }
+    100% { transform: scale(1); }
   }
 
   #error {
@@ -141,13 +156,16 @@
 
 <div id="recordingIndicator"></div>
 
-<button class="record-btn" onclick="startRecording()">🎙️ Start Recording</button>
-<button class="stop-btn" onclick="stopRecording()">🛑 Stop Recording</button>
-
+<button id="mainButton" class="main-btn" onclick="toggleRecording()">🎙️ Start Recording</button>
 <div id="spoken"></div>
 <div id="result"></div>
 <div id="scoreDisplay"></div>
+<div id="successMessage">🎉 Excellent! 100% Success!</div>
 <div id="error"></div>
+<button id="retryButton" class="retry-btn" onclick="resetPage()" style="display:none;">🔄 Try Again</button>
+
+<audio id="startSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
+<audio id="stopSound" src="https://actions.google.com/sounds/v1/cartoon/pop.ogg"></audio>
 
 <script>
 const target = decodeURIComponent(new URLSearchParams(window.location.search).get("sentence")) || "I like pizza";
@@ -158,21 +176,22 @@ let finalTranscript = "";
 let isRecording = false;
 
 const recordingIndicator = document.getElementById('recordingIndicator');
+const mainButton = document.getElementById('mainButton');
+const retryButton = document.getElementById('retryButton');
+const successMessage = document.getElementById('successMessage');
+const startSound = document.getElementById('startSound');
+const stopSound = document.getElementById('stopSound');
 
 recognition.lang = "en-US";
 recognition.interimResults = true;
 
 recognition.onresult = (event) => {
-  let interimTranscript = "";
   for (let i = event.resultIndex; i < event.results.length; ++i) {
     const transcript = event.results[i][0].transcript;
     if (event.results[i].isFinal) {
       finalTranscript += transcript + " ";
-    } else {
-      interimTranscript += transcript;
     }
   }
-  document.getElementById("spoken").innerHTML = `<p><strong>You said:</strong> ${interimTranscript}</p>`;
 };
 
 recognition.onerror = (event) => {
@@ -184,12 +203,22 @@ recognition.onerror = (event) => {
 };
 
 recognition.onend = () => {
-  if (!isRecording) {
+  if (isRecording) {
+    recognition.start(); // ממשיך להאזין אם לא סיימת
+  } else {
     processResult(finalTranscript.trim().toLowerCase());
     finalTranscript = "";
   }
   hideRecordingIndicator();
 };
+
+function toggleRecording() {
+  if (!isRecording) {
+    startRecording();
+  } else {
+    stopRecording();
+  }
+}
 
 function startRecording() {
   try {
@@ -197,6 +226,9 @@ function startRecording() {
     isRecording = true;
     document.getElementById("error").textContent = "";
     showRecordingIndicator();
+    updateButtonState();
+    hideResults();
+    startSound.play();
   } catch (e) {
     console.log("Recognition already started");
   }
@@ -204,9 +236,11 @@ function startRecording() {
 
 function stopRecording() {
   if (isRecording) {
-    recognition.stop();
     isRecording = false;
+    recognition.stop();
     hideRecordingIndicator();
+    updateButtonState();
+    stopSound.play();
   }
 }
 
@@ -230,6 +264,22 @@ function processResult(spokenText) {
   document.getElementById("spoken").innerHTML = `<p><strong>You said:</strong> ${spokenText}</p>`;
   document.getElementById("result").innerHTML = result;
   document.getElementById("scoreDisplay").innerHTML = `✅ Success: ${correct}/${expectedWords.length} (${score}%)`;
+  
+  if (score === 100) {
+    successMessage.style.display = "block";
+  }
+
+  retryButton.style.display = 'inline-block';
+}
+
+function resetPage() {
+  finalTranscript = "";
+  document.getElementById("spoken").innerHTML = "";
+  document.getElementById("result").innerHTML = "";
+  document.getElementById("scoreDisplay").innerHTML = "";
+  document.getElementById("error").textContent = "";
+  successMessage.style.display = "none";
+  retryButton.style.display = "none";
 }
 
 function showRecordingIndicator() {
@@ -238,6 +288,24 @@ function showRecordingIndicator() {
 
 function hideRecordingIndicator() {
   recordingIndicator.style.display = 'none';
+}
+
+function updateButtonState() {
+  if (isRecording) {
+    mainButton.textContent = "🛑 Stop Recording";
+    mainButton.classList.add("recording");
+  } else {
+    mainButton.textContent = "🎙️ Start Recording";
+    mainButton.classList.remove("recording");
+  }
+}
+
+function hideResults() {
+  document.getElementById("spoken").innerHTML = "";
+  document.getElementById("result").innerHTML = "";
+  document.getElementById("scoreDisplay").innerHTML = "";
+  successMessage.style.display = "none";
+  retryButton.style.display = "none";
 }
 </script>
 
