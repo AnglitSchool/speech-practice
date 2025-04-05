@@ -42,6 +42,12 @@
     .stop-btn:hover {
       background-color: #c82333;
     }
+    .try-again-btn {
+      background-color: #007acc;
+    }
+    .try-again-btn:hover {
+      background-color: #005fa3;
+    }
     .correct {
       color: white;
       background-color: lightgreen;
@@ -63,12 +69,23 @@
       font-size: 1.2em;
       color: #004080;
     }
+    #successMessage {
+      margin-top: 20px;
+      font-size: 1.4em;
+      color: green;
+      display: none;
+      animation: fadeIn 1s ease-in-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
     #error {
       margin-top: 15px;
       color: red;
       font-weight: bold;
     }
-    /* NEW: Recording indicator */
+    /* הקלטה מהבהב */
     #recordingIndicator {
       display: none;
       margin: 10px auto;
@@ -88,7 +105,7 @@
   <h1>Pronunciation Practice</h1>
   <div class="target-sentence" id="target"></div>
 
-  <!-- Recording Indicator -->
+  <!-- חיווי הקלטה -->
   <div id="recordingIndicator"></div>
 
   <button class="record-btn" onclick="startRecording()">🎙️ Start Recording</button>
@@ -97,7 +114,9 @@
   <div id="spoken"></div>
   <div id="result"></div>
   <div id="scoreDisplay"></div>
+  <div id="successMessage">🎉 Excellent! 100% Success!</div>
   <div id="error"></div>
+  <div id="tryAgainContainer"></div>
 
   <script>
     const target = decodeURIComponent(new URLSearchParams(window.location.search).get("sentence")) || "I like pizza";
@@ -109,7 +128,6 @@
 
     const recordingIndicator = document.getElementById('recordingIndicator');
 
-    // הגדרות ההקלטה
     recognition.lang = "en-US";
     recognition.interimResults = true;
 
@@ -147,6 +165,8 @@
         recognition.start();
         isRecording = true;
         document.getElementById("error").textContent = "";
+        hideSuccessMessage();
+        hideTryAgainButton();
         showRecordingIndicator();
       } catch (e) {
         console.log("Recognition already started");
@@ -181,6 +201,12 @@
       document.getElementById("spoken").innerHTML = `<p><strong>You said:</strong> ${spokenText}</p>`;
       document.getElementById("result").innerHTML = result;
       document.getElementById("scoreDisplay").innerHTML = `✅ Success: ${correct}/${expectedWords.length} (${score}%)`;
+
+      if (score === 100) {
+        showSuccessMessage();
+      } else {
+        showTryAgainButton();
+      }
     }
 
     function showRecordingIndicator() {
@@ -189,6 +215,32 @@
 
     function hideRecordingIndicator() {
       recordingIndicator.style.display = 'none';
+    }
+
+    function showSuccessMessage() {
+      document.getElementById("successMessage").style.display = "block";
+    }
+
+    function hideSuccessMessage() {
+      document.getElementById("successMessage").style.display = "none";
+    }
+
+    function showTryAgainButton() {
+      document.getElementById("tryAgainContainer").innerHTML = `<button class="try-again-btn" onclick="resetPractice()">🔄 Try Again</button>`;
+    }
+
+    function hideTryAgainButton() {
+      document.getElementById("tryAgainContainer").innerHTML = "";
+    }
+
+    function resetPractice() {
+      document.getElementById("spoken").innerHTML = "";
+      document.getElementById("result").innerHTML = "";
+      document.getElementById("scoreDisplay").innerHTML = "";
+      document.getElementById("error").textContent = "";
+      hideSuccessMessage();
+      hideTryAgainButton();
+      finalTranscript = "";
     }
   </script>
 </body>
