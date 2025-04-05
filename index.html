@@ -22,6 +22,15 @@
     font-size: 1em;
   }
 
+  .instructions {
+    background-color: #e7f3fe;
+    color: #084298;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 1em;
+  }
+
   h1 {
     font-size: 2.2em;
     color: #004080;
@@ -158,6 +167,11 @@
 
 <div class="notice">⚠️ מומלץ להשתמש במחשב. ייתכן שמכשירים מסוימים לא יתמכו בתוכנה באופן מלא.</div>
 
+<div class="instructions">
+📢 תדברו חזק ומהר אל תוך המיקרופון. המערכת מזהה דיבור רציף וברור. 
+אם יש הפסקות בין מילה למילה, המערכת תחשוב שלא אמרתם את המילה כראוי.
+</div>
+
 <h1>Pronunciation Practice</h1>
 <div class="target-sentence" id="target"></div>
 
@@ -214,12 +228,11 @@ recognition.onerror = (event) => {
 
 recognition.onend = () => {
   if (isRecording) {
-    recognition.start();
+    recognition.start(); // ממשיך להאזין אם לא סיימת
   } else {
     processResult(finalTranscript.trim().toLowerCase());
     finalTranscript = "";
   }
-  hideRecordingIndicator();
 };
 
 function toggleRecording() {
@@ -293,7 +306,7 @@ function processResult(spokenText) {
   document.getElementById("spoken").innerHTML = `<p><strong>You said:</strong> ${spokenText}</p>`;
   document.getElementById("result").innerHTML = result;
   document.getElementById("scoreDisplay").innerHTML = `✅ Success: ${correct}/${expectedWords.length} (${score}%)`;
-  
+
   if (score === 100) {
     successMessage.style.display = "block";
   }
