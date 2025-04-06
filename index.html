@@ -350,15 +350,7 @@ function processResult(spokenText) {
 
 function resetPage() {
   if (isMobile) {
-    setTimeout(() => {
-      finalTranscript = "";
-      isRecording = false;
-      isSessionActive = true;
-      recognition = createRecognition();
-      hideResults();
-      updateButtonState();
-      hideRecordingIndicator();
-    }, 500); // שיהוי קצר למובייל
+    location.reload();
   } else {
     finalTranscript = "";
     isRecording = false;
