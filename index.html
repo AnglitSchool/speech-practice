@@ -349,11 +349,17 @@ function processResult(spokenText) {
 }
 
 function resetPage() {
-  finalTranscript = "";
-  isRecording = false;
-  isSessionActive = true;
-  recognition = createRecognition();
-  location.reload();
+  if (isMobile) {
+    location.reload();
+  } else {
+    finalTranscript = "";
+    isRecording = false;
+    isSessionActive = true;
+    recognition = createRecognition();
+    hideResults();
+    updateButtonState();
+    hideRecordingIndicator();
+  }
 }
 
 function showRecordingIndicator() {
