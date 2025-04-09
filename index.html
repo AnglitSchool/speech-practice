@@ -318,8 +318,10 @@ function stopRecording() {
 }
 
 function processResult(spokenText) {
-  const expectedWords = target.toLowerCase().split(" ");
-  const spokenWords = spokenText.split(" ");
+  const clean = (text) => text.replace(/[’'.,!?]/g, "").toLowerCase();
+
+  const expectedWords = clean(target).split(" ");
+  const spokenWords = clean(spokenText).split(" ");
 
   let correct = 0;
   let result = "";
@@ -359,7 +361,7 @@ function resetPage() {
     hideResults();
     updateButtonState();
     hideRecordingIndicator();
-    document.body.style.backgroundColor = "#f4faff"; // ✅ תיקון הרקע!
+    document.body.style.backgroundColor = "#f4faff";
   }
 }
 
